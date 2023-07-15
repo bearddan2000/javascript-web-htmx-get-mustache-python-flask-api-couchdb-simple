@@ -1,0 +1,37 @@
+version: "3.4"
+
+services:
+  web:
+    image: httpd:latest
+    volumes:
+      - ./web/bin:/usr/local/apache2/htdocs 
+    ports:
+      - 80:80
+      
+  db:
+    image: apache/couchdb
+    environment:
+      - COUCHDB_USER=maria
+      - COUCHDB_PASSWORD=pass
+    volumes:
+      - ./db/config:/opt/couchdb/etc/local.d
+    #  - ./db/data:/opt/couchdb/data
+    ports:
+     - 5984
+
+  api:
+    build: api
+    healthcheck:
+      test: "exit 0"
+    command: sh -c "/wait && python app.py"
+    environment:
+      - WAIT_HOSTS=db:5984
+      - WAIT_HOSTS_TIMEOUT=300
+      - WAIT_SLEEP_INTERVAL=30
+      - WAIT_HOST_CONNECT_TIMEOUT=30
+    depends_on:
+      - db
+    links:
+      - "db:db"
+    ports:
+      - "81:5000"
